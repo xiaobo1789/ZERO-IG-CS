@@ -1,4 +1,0 @@
-2025-07-25 19:35:11,185 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'train.py')
-2025-07-25 19:35:11,259 gpu device = 0
-2025-07-25 19:35:11,260 args = Namespace(batch_size=1, cuda=True, epochs=800, gpu='0', lr=0.0003, model_pretrain='', save='./EXP//Train-20250725-193511', seed=2)
-2025-07-25 19:35:13,668 model size = 0.086572

@@ -1,0 +1,4 @@
+2025-07-26 15:30:56,865 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'train.py')
+2025-07-26 15:30:56,866 使用GPU设备 = 0
+2025-07-26 15:30:56,866 参数 = Namespace(batch_size=1, cuda=True, epochs=800, gpu='0', lr=0.0003, model_pretrain='', save='./EXP//Train-20250726-153056', seed=2)
+2025-07-26 15:30:57,266 模型大小 = 0.086572 MB

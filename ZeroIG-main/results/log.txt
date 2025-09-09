@@ -1,0 +1,12 @@
+2025-07-29 11:20:12,122 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'test.py')
+2025-07-29 11:28:49,325 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'test.py')
+2025-07-29 11:31:07,720 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'test.py')
+2025-07-29 11:31:41,790 Image 12345 - PSNR: 12.90 dB, SSIM: 0.5819
+2025-07-29 11:34:03,680 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'test.py')
+2025-07-29 11:34:35,250 Image 12345 - PSNR: 5.10 dB, SSIM: 0.3338
+2025-07-29 11:36:42,971 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'test.py')
+2025-07-29 11:37:15,777 Image 12345 - PSNR: 5.10 dB, SSIM: 0.3338
+2025-07-29 11:40:40,100 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'test.py')
+2025-07-29 11:40:48,609 Image 00009_06_0 - PSNR: 7.35 dB, SSIM: 0.2232
+2025-07-29 11:50:45,458 train file name = ('E:\\ZeroIG-main\\ZeroIG-main', 'test.py')
+2025-07-29 11:50:50,232 Image 1 - PSNR: 7.65 dB, SSIM: 0.2635

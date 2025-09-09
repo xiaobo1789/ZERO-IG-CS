@@ -4,55 +4,106 @@ import torch.utils.data
 from PIL import Image
 import torchvision.transforms as transforms
 import os
+import logging
 
-# 自定义数据集类，继承PyTorch的Dataset，用于加载图像数据
+# 配置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+
 class DataLoader(torch.utils.data.Dataset):
-    def __init__(self, img_dir, task):
-        # 初始化函数：读取图像目录并准备数据列表
-        self.low_img_dir = img_dir  # 低光图像目录路径
-        self.task = task  # 任务类型（'train'或'test'）
-        self.train_low_data_names = []  # 存储低光图像路径的列表
-        self.train_target_data_names = []  # 存储目标图像路径的列表（未使用，预留）
+    def __init__(self, img_dir, task, target_dir=None):
+        self.target_dir = target_dir
+        self.low_img_dir = img_dir
+        self.task = task
+        self.train_low_data_names = []
 
-        # 遍历目录下所有文件，收集图像路径
+        # 收集图像路径
         for root, dirs, names in os.walk(self.low_img_dir):
             for name in names:
-                self.train_low_data_names.append(os.path.join(root, name))  # 拼接完整路径并添加到列表
+                if name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
+                    self.train_low_data_names.append(os.path.join(root, name))
+        self.train_low_data_names.sort()
+        self.count = len(self.train_low_data_names)
 
-        self.train_low_data_names.sort()  # 排序路径列表，确保顺序一致
-        self.count = len(self.train_low_data_names)  # 数据总数
+        # 定义图像转换
+        if self.task == 'train':
+            # 训练时：添加颜色增强及其他数据增强
+            # 注意：为了保持一致性，对输入和目标应用相同的随机变换
+            self.transform = transforms.Compose([
+                transforms.Resize((300, 200)),
+                transforms.RandomHorizontalFlip(p=0.5),
 
-        # 定义图像转换：先缩放再转为Tensor（保持3:2比例，从2952x1728缩放到1476x864，缩小为原来的1/2）
-        transform_list = []
-        # 缩放图像（保持3:2比例），参数为(高度, 宽度)
-        transform_list += [transforms.Resize((864, 1476))]
-        transform_list += [transforms.ToTensor()]  # 将PIL图像转为Tensor（会自动归一化到[0,1]）
-        self.transform = transforms.Compose(transform_list)  # 组合转换操作
+                transforms.RandomVerticalFlip(p=0.3),
+                transforms.RandomRotation(15),
+                transforms.ColorJitter(
+                    brightness=0.2,
+                    contrast=0.2,
+                    saturation=0.2,
+                    hue=0.05
+                ),
+                transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.1),
+                transforms.RandomGrayscale(p=0.01),
+                transforms.ToTensor()
 
+            ])
+        else:
+            # 测试时保持不变（不做增强，只转Tensor）
+            self.transform = transforms.Compose([
+                transforms.ToTensor()
+            ])
+
+        # 记录数据集统计信息
+        logging.info(f"Dataset initialized - Task: {task}, Low images: {self.count}")
+        if target_dir:
+            logging.info(f"Target directory: {target_dir}")
 
     def load_images_transform(self, file):
-        # 加载图像并应用转换
-        im = Image.open(file).convert('RGB')  # 打开图像并转为RGB格式
-        img_norm = self.transform(im).numpy()  # 应用转换并转为numpy数组
-        img_norm = np.transpose(img_norm, (1, 2, 0))  # 调整维度顺序：(C,H,W)→(H,W,C)，便于后续处理
-        return img_norm
+        im = Image.open(file).convert('RGB')
+        im = self.transform(im)
+        im = torch.clamp(im, 0.0, 1.0)  # 确保数据在[0,1]范围内
+        return im
 
 
     def __getitem__(self, index):
-        # 按索引获取数据（PyTorch Dataset核心方法）
+        img_path = self.train_low_data_names[index]
+        img_name = os.path.basename(img_path)
+        low_img = self.load_images_transform(img_path)
 
-        current_img_path = self.train_low_data_names[index]# 1打印当前处理的图像路径，定位是否是特定图像导致卡住
-        print(f"Processing image: {current_img_path}")  # 1添加此行
-        # 加载低光图像
-        low = self.load_images_transform(self.train_low_data_names[index])
-        low = np.asarray(low, dtype=np.float32)  # 转为float32类型
-        low = np.transpose(low[:, :, :], (2, 0, 1))  # 调整维度顺序为(C,H,W)，符合PyTorch张量格式
-        # 获取图像文件名（用于保存结果时命名）
-        img_name = self.train_low_data_names[index].split('\\')[-1]  # 分割路径，取最后一个部分（文件名）
+        # 记录图像加载信息
+        logging.debug(f"Loading image: {img_path}, Shape: {low_img.shape}")
 
-        return torch.from_numpy(low), img_name  # 返回图像张量和文件名
+        # 添加目标图像加载逻辑
+        target_img = None
+        if self.task == 'test' and self.target_dir:
+            # 构建目标图像路径
+            target_path = os.path.join(self.target_dir, img_name)
+            if os.path.exists(target_path):
+                target_img = self.load_images_transform(target_path)
+                logging.debug(f"Loading target image: {target_path}, Shape: {target_img.shape}")
+            else:
+                # 如果找不到对应图像，创建全黑占位符并记录警告
+                logger.warning(f"Target image not found: {target_path}. Using zero tensor.")
+                target_img = torch.zeros_like(low_img)
 
+        if self.task == 'train' and self.target_dir:
+            # 训练模式：使用相对路径构建目标图像路径
+            # 注意：这里假设低光图像和目标图像在相同目录结构下
+            rel_path = os.path.relpath(img_path, self.low_img_dir)
+            target_path = os.path.join(self.target_dir, rel_path)
+            if os.path.exists(target_path):
+                target_img = self.load_images_transform(target_path)
+                logging.debug(f"Loading target image: {target_path}, Shape: {target_img.shape}")
+            else:
+                logger.warning(f"Target image not found: {target_path}. Using zero tensor.")
+                target_img = torch.zeros_like(low_img)
+            return low_img, target_img, img_name
+        elif self.task == 'test' and self.target_dir:
+            # 测试模式返回目标图像
+            return low_img, target_img, img_name
+        else:
+            # 如果没有提供目标目录，则只返回低光图像和名称
+            return low_img, img_name
 
     def __len__(self):
-        # 返回数据总数（PyTorch Dataset核心方法）
         return self.count

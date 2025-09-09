@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="zeroig" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="zeroig" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.9 (zeroig_cuda)" project-jdk-type="Python SDK" />
 </project>
